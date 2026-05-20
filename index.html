@@ -149,9 +149,9 @@
     </header>
 
     <div id="chat-container">
-        <div class="message claude">Welcome to your personal Claude interface hosted on GitHub! 
+        <div class="message claude">Welcome back! This client now makes <strong>direct, official CORS requests</strong> to Anthropic's endpoints. 
 
-To start, paste your Anthropic API key in the box above. It will be saved securely in your browser's local cache (not on GitHub).</div>
+Input your key above to connect. Your browser handles all transactions locally.</div>
     </div>
 
     <div id="input-container">
@@ -167,7 +167,7 @@ To start, paste your Anthropic API key in the box above. It will be saved secure
         const modelSelect = document.getElementById('model-select');
         const clearKeyBtn = document.getElementById('clear-key-btn');
 
-        // 1. Secure local storage management
+        // Secure local storage management
         if (localStorage.getItem('my_claude_key')) {
             apiKeyInput.value = localStorage.getItem('my_claude_key');
         }
@@ -209,17 +209,17 @@ To start, paste your Anthropic API key in the box above. It will be saved secure
 
             const statusDiv = appendMessage('Claude is thinking...', 'system-status');
 
-            // Using a reliable CORS proxy wrapper to allow browser-to-Anthropic communication
-            const proxyUrl = 'https://corsproxy.io/?';
             const apiUrl = 'https://api.anthropic.com/v1/messages';
 
             try {
-                const response = await fetch(proxyUrl + encodeURIComponent(apiUrl), {
+                // Direct request to Anthropic with direct-browser-access bypass header
+                const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
                         'x-api-key': apiKey,
                         'anthropic-version': '2023-06-01',
-                        'content-type': 'application/json'
+                        'content-type': 'application/json',
+                        'anthropic-dangerous-direct-browser-access': 'true' 
                     },
                     body: JSON.stringify({
                         model: modelSelect.value,
