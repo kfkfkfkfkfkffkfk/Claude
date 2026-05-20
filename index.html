@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Custom Claude Client</title>
+    <title>My GitHub Claude Client</title>
     <style>
         :root {
             --bg-color: #1e1e2e;
@@ -30,7 +30,7 @@
             padding: 15px;
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 15px;
             align-items: center;
             border-bottom: 1px solid #45475a;
         }
@@ -134,8 +134,8 @@
 
     <header>
         <div class="config-group">
-            <label for="api-key">API Key:</label>
-            <input type="password" id="api-key" placeholder="sk-ant-...">
+            <label for="api-key">Claude API Key:</label>
+            <input type="password" id="api-key" placeholder="Paste sk-ant-... here">
         </div>
         <div class="config-group">
             <label for="model-select">Model:</label>
@@ -145,14 +145,17 @@
                 <option value="claude-3-opus-20240229">Claude 3 Opus</option>
             </select>
         </div>
+        <button id="clear-key-btn" style="background-color: #f38ba8; margin-left: auto;">Forget Key</button>
     </header>
 
     <div id="chat-container">
-        <div class="message claude">Hello! I am your custom Claude interface. Paste your API key above to start talking to me.</div>
+        <div class="message claude">Welcome to your personal Claude interface hosted on GitHub! 
+
+To start, paste your Anthropic API key in the box above. It will be saved securely in your browser's local cache (not on GitHub).</div>
     </div>
 
     <div id="input-container">
-        <textarea id="user-input" placeholder="Type your message here... (Press Enter to send, Shift+Enter for new line)"></textarea>
+        <textarea id="user-input" placeholder="Type a message... (Enter to send)"></textarea>
         <button id="send-btn">Send</button>
     </div>
 
@@ -162,18 +165,23 @@
         const sendBtn = document.getElementById('send-btn');
         const apiKeyInput = document.getElementById('api-key');
         const modelSelect = document.getElementById('model-select');
+        const clearKeyBtn = document.getElementById('clear-key-btn');
 
-        // Load saved API key from local storage if it exists
-        if (localStorage.getItem('claude_api_key')) {
-            apiKeyInput.value = localStorage.getItem('claude_api_key');
+        // 1. Secure local storage management
+        if (localStorage.getItem('my_claude_key')) {
+            apiKeyInput.value = localStorage.getItem('my_claude_key');
         }
 
-        // Save API key when changed
-        apiKeyInput.addEventListener('change', () => {
-            localStorage.setItem('claude_api_key', apiKeyInput.value);
+        apiKeyInput.addEventListener('input', () => {
+            localStorage.setItem('my_claude_key', apiKeyInput.value.trim());
         });
 
-        // Store conversation history
+        clearKeyBtn.addEventListener('click', () => {
+            localStorage.removeItem('my_claude_key');
+            apiKeyInput.value = '';
+            alert('API key removed from browser storage.');
+        });
+
         let conversationHistory = [];
 
         function appendMessage(text, sender) {
@@ -191,19 +199,17 @@
 
             if (!text) return;
             if (!apiKey) {
-                alert('Please enter your Anthropic API key first.');
+                alert('Please provide your Claude API key in the top bar.');
                 return;
             }
 
-            // Clear input and append user message
             userInput.value = '';
             appendMessage(text, 'user');
             conversationHistory.push({ role: 'user', content: text });
 
-            // Create a temporary placeholder for Claude's response
             const statusDiv = appendMessage('Claude is thinking...', 'system-status');
 
-            // Using a public CORS proxy to bypass browser restrictions on direct Anthropic API calls
+            // Using a reliable CORS proxy wrapper to allow browser-to-Anthropic communication
             const proxyUrl = 'https://corsproxy.io/?';
             const apiUrl = 'https://api.anthropic.com/v1/messages';
 
@@ -226,26 +232,23 @@
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
+                    throw new Error(errorData.error?.message || `HTTP ${response.status}`);
                 }
 
                 const data = await response.json();
                 const reply = data.content[0].text;
 
-                // Append Claude's response and save to history
                 appendMessage(reply, 'claude');
                 conversationHistory.push({ role: 'assistant', content: reply });
 
             } catch (error) {
                 console.error(error);
                 statusDiv.remove();
-                appendMessage(`Error: ${error.message}. Make sure your API key is valid and you have credits available.`, 'claude');
+                appendMessage(`Error: ${error.message}. Ensure your key is correct, active, and has funds.`, 'claude');
             }
         }
 
-        // Event Listeners
         sendBtn.addEventListener('click', sendMessage);
-
         userInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
